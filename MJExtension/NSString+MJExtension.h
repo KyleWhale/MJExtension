@@ -23,11 +23,11 @@
 /**
  * 首字母变大写
  */
-- (NSString *)mj_firstCharUpper;
+- (NSString *)mj_firstCharUpper:(NSString *)string;
 /**
  * 首字母变小写
  */
-- (NSString *)mj_firstCharLower;
+- (NSString *)mj_firstCharLower:(NSString *)string;
 
 - (BOOL)mj_isPureInt;
 

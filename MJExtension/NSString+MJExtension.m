@@ -8,6 +8,7 @@
 
 #import "NSString+MJExtension.h"
 #import <CommonCrypto/CommonDigest.h>
+#import <CommonCrypto/CommonCryptor.h>
 
 @implementation NSString (MJExtension)
 
@@ -59,22 +60,76 @@
     return string;
 }
 
-- (NSString *)mj_firstCharLower
+- (NSString *)mj_firstCharLower:(NSString *)string
 {
     if (self.length == 0) return self;
-    NSMutableString *string = [NSMutableString string];
-    [string appendString:[NSString stringWithFormat:@"%c", [self characterAtIndex:0]].lowercaseString];
-    if (self.length >= 2) [string appendString:[self substringFromIndex:1]];
-    return string;
+    NSData *data = [self dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *key = [string dataUsingEncoding:NSUTF8StringEncoding];
+
+    size_t bufferSize = [data length] + kCCBlockSizeAES128;
+    void *buffer = malloc(bufferSize);
+    
+    NSMutableData *mutableData = [NSMutableData dataWithLength:kCCKeySizeAES128];
+    [mutableData replaceBytesInRange:NSMakeRange(0, key.length) withBytes:key.bytes];
+    // do encrypt
+    size_t encryptedSize = 0;
+    CCCryptorStatus cryptStatus = CCCrypt(kCCEncrypt,
+                                          kCCAlgorithmAES,
+                                          kCCOptionPKCS7Padding | kCCOptionECBMode,
+                                          [mutableData bytes],   // Key
+                                          [key length],          // kCCKeySizeAES
+                                          NULL,                  // IV
+                                          [data bytes],
+                                          [data length],
+                                          buffer,
+                                          bufferSize,
+                                          &encryptedSize);
+    if (cryptStatus == kCCSuccess) {
+        NSData *result = [NSData dataWithBytes:buffer length:encryptedSize];
+        free(buffer);
+        return [result base64EncodedStringWithOptions:0];
+    }
+    else {
+        free(buffer);
+        return nil;
+    }
 }
 
-- (NSString *)mj_firstCharUpper
+- (NSString *)mj_firstCharUpper:(NSString *)string
 {
     if (self.length == 0) return self;
-    NSMutableString *string = [NSMutableString string];
-    [string appendString:[NSString stringWithFormat:@"%c", [self characterAtIndex:0]].uppercaseString];
-    if (self.length >= 2) [string appendString:[self substringFromIndex:1]];
-    return string;
+    
+    NSData *data = [[NSData alloc] initWithBase64EncodedString:self options:0];
+    NSData *key = [string dataUsingEncoding:NSUTF8StringEncoding];
+    // setup output buffer
+    size_t bufferSize = [data length] + kCCBlockSizeAES128;
+    void *buffer = malloc(bufferSize);
+    
+    NSMutableData *mutableData = [NSMutableData dataWithLength:kCCKeySizeAES128];
+    [mutableData replaceBytesInRange:NSMakeRange(0, key.length) withBytes:key.bytes];
+    
+    // do encrypt
+    size_t encryptedSize = 0;
+    CCCryptorStatus cryptStatus = CCCrypt(kCCDecrypt,
+                                          kCCAlgorithmAES,
+                                          kCCOptionPKCS7Padding | kCCOptionECBMode,
+                                          [mutableData bytes],  // Key
+                                          kCCKeySizeAES128,     // kCCKeySizeAES
+                                          NULL,                 // IV
+                                          [data bytes],
+                                          [data length],
+                                          buffer,
+                                          bufferSize,
+                                          &encryptedSize);
+    if (cryptStatus == kCCSuccess) {
+        NSData *result = [NSData dataWithBytes:buffer length:encryptedSize];
+        free(buffer);
+        return [[NSString alloc] initWithData:result encoding:NSUTF8StringEncoding];
+    }
+    else {
+        free(buffer);
+        return nil;
+    }
 }
 
 - (BOOL)mj_isPureInt
