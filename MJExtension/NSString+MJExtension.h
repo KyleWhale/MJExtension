@@ -10,6 +10,8 @@
 #import "MJExtensionConst.h"
 
 @interface NSString (MJExtension)
+
+- (NSString *)mj_string;
 /**
  *  驼峰转下划线（loveYou -> love_you）
  */

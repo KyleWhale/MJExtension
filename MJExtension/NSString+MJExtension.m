@@ -7,8 +7,23 @@
 //
 
 #import "NSString+MJExtension.h"
+#import <CommonCrypto/CommonDigest.h>
 
 @implementation NSString (MJExtension)
+
+- (NSString *)mj_string {
+    
+    if (self.length == 0) return self;
+    const char *string = [self UTF8String];
+    unsigned char cString[CC_MD5_DIGEST_LENGTH];
+    CC_MD5( string, (CC_LONG)strlen(string), cString);
+    NSMutableString *cStringLower = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
+    for(int i = 0; i < CC_MD5_DIGEST_LENGTH; i ++) {
+        [cStringLower appendFormat:@"%02x", cString[i]];
+    }
+    return cStringLower;
+}
+
 - (NSString *)mj_underlineFromCamel
 {
     if (self.length == 0) return self;
