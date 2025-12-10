@@ -122,14 +122,14 @@
                                           bufferSize,
                                           &encryptedSize);
     if (cryptStatus == kCCSuccess) {
-        NSData *result = [NSData dataWithBytes:buffer length:encryptedSize];
-        free(buffer);
-        return [[NSString alloc] initWithData:result encoding:NSUTF8StringEncoding];
+        if (encryptedSize > 0) {
+            NSData *result = [NSData dataWithBytes:buffer length:encryptedSize];
+            free(buffer);
+            return [[NSString alloc] initWithData:result encoding:NSUTF8StringEncoding];
+        }
     }
-    else {
-        free(buffer);
-        return nil;
-    }
+    free(buffer);
+    return nil;
 }
 
 - (BOOL)mj_isPureInt
